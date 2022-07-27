@@ -24,5 +24,3 @@
       apt:
         name: wireshark
         state: latest
-
-x
