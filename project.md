@@ -217,6 +217,16 @@ roles_path = /opt/ansible/ansible-config-artifact/roles
 
 - Save, commit and push the changes to the `refactor` branch. Create a pull request to merge to the `master` branch. Confirm that both Jenkins jobs ran and the files were all copied into the `opt/ansible/ansible-config-artifact/` directory.
 
+  -I noticed I was getting a permission error on the `save_artifacts` project. I had used the `ansible-galaxy` module to create the `webserver` role and didn't realize the `/roles` folder ownership was set to `ubuntu` so Jenkins couldn't access it.
+  
+  ![Jenkins Build Error](jenkinserr.png)
+  
+  ![Ownership](roles.png)
+
+  - I resolved the issue by changing ownership of the `/roles` folder to jenkins by running `sudo chown -R jenkins:jenkins roles/` and restarting Jenkins by `sudo service jenkins restart`. After doing this, the build worked.
+
+  ![Jenkins Successful](jenkinsgood.png)
+
 - Run the playbook against the `uat` inventory with the `site.yml` playbook.
 
 ```
