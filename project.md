@@ -11,7 +11,7 @@
 
 ![Ansible Folder](anscfg.png)
 
-*Opted for creating the folder in `/opt` as creating the folder in `/home/ubuntu/` didn't allow Jenkins access it. See error below:
+- Opted for creating the folder in `/opt` as creating the folder in `/home/ubuntu/` didn't allow Jenkins access it. See error below:
 
 ```
 java.nio.file.AccessDeniedException: /home/ubuntu/ansible-config-artifact
@@ -217,7 +217,7 @@ roles_path = /opt/ansible/ansible-config-artifact/roles
 
 - Save, commit and push the changes to the `refactor` branch. Create a pull request to merge to the `master` branch. Confirm that both Jenkins jobs ran and the files were all copied into the `opt/ansible/ansible-config-artifact/` directory.
 
-  -I noticed I was getting a permission error on the `save_artifacts` project. I had used the `ansible-galaxy` module to create the `webserver` role and didn't realize the `/roles` folder ownership was set to `ubuntu` so Jenkins couldn't access it.
+  - I noticed I was getting a permission error on the `save_artifacts` project. I had used the `ansible-galaxy` module to create the `webserver` role and didn't realize the `/roles` folder ownership was set to `ubuntu` so Jenkins couldn't access it.
   
   ![Jenkins Build Error](jenkinserr.png)
   
