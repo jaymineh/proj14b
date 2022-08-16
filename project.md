@@ -1,80 +1,46 @@
-# Project 11 - Ansible Configuration Management
+# Project 12 - Ansible Refactoring And Static Assignments (Imports And Roles)
 
-**Step 1 - Install & Configure Ansible**
+**Step 1 - Jenkins Job Enhancement**
 ---
 
-- Spin up a new Ubuntu instance or use the same one with Jenkins installed. Note that if a new ansible server is to be spinned up it needs to have an elastic IP for convenience.
+*Note that the goal in this step is to clean up/optimize the Jenkins build process. Previously, every change will lead to Jenkins creating a new folder for each new build. This would be a problem in the future due to space being consumed on the Jenkins server. This is curtailed in this step as Jenkins woould be configured to keep only 3 of the latest builds and discard the rest, saving much needed space.*
 
-- Install Ansible by running `sudo apt install ansible`. Confirm Ansible is running by doing `ansible --version`.
+- Create a new folder on the Jenkins server to save all artifacts after each build. This folder will be used to house the artifacts copied from the original `/var/lib/jenkins/` folder.
 
-**Step 2 - Configure Jenkins Build Job**
----
+- Run `mkdir /opt/ansible/ansible-config-artifact` to create the folder and run `sudo chmod -R 777 /opt/ansible/ansible/ansible-config-artifact` to grant Jenkins permission to save files there.
 
-- Create a new repo in GitHub. This will be used to house the info for the project.
+![Ansible Folder](anscfg.png)
 
-- Create a new project in Jenkins and point it to the newly created repo in GitHub.
-
-- Configure webhook in GitHub and set it up to automatically trigger a new build for the project.
-
-- Configure a post build job to save all files to the Jenkins server.
-
-- Test setup by making a change in the master branch of the GitHub repo to see if a build is triggered automtically.
-
-*Screenshots for step 1.1 are available in Proj 9 for guidance on how to configure Jenkins build*
-
-- Clone down the repo to the local machine.
-
-**Step 3 - Set Up SSH Agent**
----
-
-- Enable port 22 is opened on the Ansible/Jenkins server.
-
-- Run the following commands on your terminal to set up the SSH agent.
+*Opted for creating the folder in `/opt` as creating the folder in `/home/ubuntu/` didn't allow Jenkins access it. See error below:
 
 ```
-eval `ssh-agent -s`
-ssh-add <path-to-private-key>
+java.nio.file.AccessDeniedException: /home/ubuntu/ansible-config-artifact
 ```
 
-- Run `ssh-add -l` to confirm if the key has been successfully added.
+- Install the `Copy Artifact` Jenkins module and create a new project. I named mine `save artifacts`. Configure the project as below:
 
-- Try to connect to the Ansible/Jenkins instance by running `ssh -A ubuntu@public-ip`. Note that for EC2 based instances it is `ec2-user@public-ip`.
+![Save Artifact Config 1](savecfg1.png)
 
-**Step 4 - Set Up Ansible Inventory**
+![Save Artifact Config 2](savecfg2.png)
+
+![Save Artifact Config 3](savecfg3.png)
+
+- Save and trigger the `test` job. If successful, the `save_artifacts` job will trigger and copy the files from the `test` job and save in the `/opt/ansible/ansible-config-artifact` folder.
+
+![Successful Run](consoleoutput.png)
+
+**Step 2 - Refactor Ansible Code By Importing Other Playbooks Into Parent Playbook**
 ---
 
-- Create a new branch in your local computer, which will be used for development of new features as deployment directly to the main/master branch is NOT recommended. Best practice is to give descriptions to every new branch created.
+*In the previous project, all tasks were done in the `common.yml`, which is OK for simple instructions but is a nightmare for more complex tasks. Here, a playbook will be created that will act as the "parent" or entry point to the entire infrastructure config. Other playbooks will be referenced here. `site.yml` will be used in this case*
 
-- Create two directories named `playbooks` for storing playbook files & `inventory` to keep hosts organized.
+- Pull down the latest code that was uploaded in `Step 1` to the local machine and create a new branch called `refactor`.
 
-- Within the `playbooks` folder, create an ansible playbook and name it `common.yml`.
+- Move the previously created `common.yml` playbook into a newly created `static-assignments` folder.
 
-- Within the `inventory` folder, create an inventory file for each environment and name them `dev.yml`, `staging.yml`, `uat.yml` & `prod.yml`.
+- Inside the `static-asignments` folder, create another playbook called `common-del.yml` reference in the `site.yml` playbook.
 
-![Ansible Inventory](inventory.png)
-
-- Update the `inventory/dev.yml` file with the code below. This is to declare all the host files ansible would use.
-
-```
-[nfs]
-<NFS-Server-Private-IP-Address> ansible_ssh_user='ec2-user'
-
-[webservers]
-<Web-Server1-Private-IP-Address> ansible_ssh_user='ec2-user'
-<Web-Server2-Private-IP-Address> ansible_ssh_user='ec2-user'
-<Web-ServerX-Private-IP-Address> ansible_ssh_user='ec2-user'
-
-[db]
-<Database-Private-IP-Address> ansible_ssh_user='ec2-user' 
-
-[lb]
-<Load-Balancer-Private-IP-Address> ansible_ssh_user='ubuntu'
-```
-
-**Step 5 - Create Playbook**
----
-
-- Update the `playbooks/common.yml` file which contains the tasks Ansible will run on the servers in the host file
+- In the previous project, Wireshark was installed using `common.yml`. Here in `common-del.yml`, Wireshark will be removed. Use the below to config the `common-del.yml` file.
 
 ```
 ---
@@ -84,10 +50,10 @@ ssh-add <path-to-private-key>
   become: yes
   become_user: root
   tasks:
-    - name: ensure wireshark is at the latest version
+    - name: delete wireshark
       yum:
         name: wireshark
-        state: latest
+        state: removed
 
 - name: update LB & db server
   hosts: lb, db
@@ -95,84 +61,174 @@ ssh-add <path-to-private-key>
   become: yes
   become_user: root
   tasks:
-    - name: Update apt repo
+    - name: delete wireshark
       apt: 
-        update_cache: yes
-
-
-    - name: ensure wireshark is at the latest version
-      apt:
-        name: wireshark
-        state: latest
+        name: wireshark-qt
+        state: absent
+        autoremove: yes
+        purge: yes
+        autoclean: yes
 ```
 
-**Step 6 - Update Git With The Latest Code**
----
-
-- Since all the config that was done in the previous step are still on the local PC, we need to push to the dev branch in GitHub so another developer can review the code.
-
-- After the code has been pushed, create a pull request so the code can be reviewed.
-
-- After the code has been reviewed, merge the code into the main/master branch. Doing so will cause Jenkins to run a build via webhook since it was set up to respond to the main/master branch.
-
-- On your local PC,checkout into the master branch and pull down the latest changes. Jenkins saves all the files to the `/var/lib/jenkins/jobs/ansible/builds/<build_number>/archive/` directory on the Jenkins/Ansible server.
-
-![Jenkins Builds](jenkinsbuilds.png)
-
-**Step 7 - Run Ansible Test**
----
-
-- Change directory into the `/var/lib/jenkins/jobs/ansible/builds/<build_number>/archive/` on the Jenkins/Ansible server and run `ansible-playbook -i inventory/dev.yml playbooks/common.yml`
-
-![Ansible First Run](ansible1st.png)
-
-  - Had an error where the hosts were unreachable. I was able to resolve this issue by turning on the respective servers, ensuring their services were running ad double-checking the SSH-agent had the pem key in it.
-
-    ![Unreachable Error](unreachable_err.png)
-
-  - Ran into another error called `OSError Errno12, Cannot allocate memory`. Found out that this error occurs when the machine running playbook doesn't have enough RAM to perform the action. I resolved the error by setting up swap memory on the Jenkins server.
-
-    ![OSError Errno12](oserror.png)
-
-    ![Swap config](swapfile.png)
-
-- Check if wireshark was successfully installed by running `wireshark --version`
-
-![Wireshark Check](wireshark.png)
-
-**Step 8 - Update Ansible Playbook**
----
-
-- Now that it's confirmed the setup is working, update the ansible playbook to create a directory, a file and set the timezone. See config below.
+- Inside the `site.yml` file, import the `common-del.yml` playbook. This code uses the built in `import_playbook` module.
 
 ```
-- name: create directory, file and set timezone on all servers
-  hosts: webserver, nfs, db, lb
-  become: yes
-  tasks:
-    - name: create a directory
-      file:
-        path: /home/testdir
-        state: directory
-
-    - name: create a file
-      file:
-        path: /home/testdir/testdoc.txt
-        state: touch
-
-    - name: set timezone
-      timezone:
-        name: Africa/Lagos
+---
+- hosts: all
+- import_playbook: ../static-assignments/common-del.yml
 ```
 
-- Run the `inventory/dev.yml` & `playbooks/common.yml` playbooks.
+- Ensure that the folder structure is like this
 
-![Ansible Second Run](ansible2nd.png)
+```
+├── static-assignments
+│   └── common.yml
+├── inventory
+    └── dev
+    └── stage
+    └── uat
+    └── prod
+└── playbooks
+    └── site.yml
+```
 
-- Confirm if the file/folder is created and check the timezone.
+- Run the ansible playbook against the `dev` servers. Before running the playbook, make sure that ssh-agent was used to ssh into the Jenkins/Ansible server.
 
-![Test Directory](testdir.png)
+```
+cd /opt/ansible/ansible-config-artifact/
+&
+ansible-playbook -i inventory/dev.yml playbooks/site.yml
+```
 
-![Timezone](timezone.png)
+- After the playbook has run successfully, confirm if wireshark was deleted.
 
-**Project 11 Deployed Successfully!**
+![No Wireshark](nowire.png)
+
+*Over the next steps, 2 new servers will be spun up and configured using the created role for ansible to run the playbook. The end result will be a fully functional tooling website installed on the 2 newly configured UAT webservers*
+
+**Step 3 - Configure UAT Webservers With The "Webserver" Role**
+---
+
+- Spin up 2 new RHEL based servers. Remember to modify the NSG to allow incoming traffic.
+
+- Create a directory in the `/opt/ansible/ansible-config-artifact` folder called `roles`. This is where the `webserver` role we will create will reside.
+
+- Create a folder called `webserver` inside the `/opt/ansible/ansible-config-artifact/roles` directory. Ensure that the folder structure looks like this. Doing this "declares" `webserver` as a role.
+
+```
+└── roles
+  └── webserver
+    ├── README.md
+    ├── defaults
+    │   └── main.yml
+    ├── handlers
+    │   └── main.yml
+    ├── meta
+    │   └── main.yml
+    ├── tasks
+    │   └── main.yml
+    └── templates
+```
+
+*Alternatively, an ansible utility can be used inside the `/ansible-config-artifact/roles` directory to setup the `webserver` role instead. Inside the `~/.roles` directory, run `ansible-galaxy init webserver` and the role would be setup. However, we went with creating the folder structure manually since we want the code to be stored in GitHub instead of the local machine.*
+
+- Add the IP addresses of the 2 new UAT webservers to the ansible inventory. Go to the `/ansible-config-artifact/inventory/uat.yml` file and insert the config below.
+
+```
+[uat-webservers]
+<Web1-UAT-Server-Private-IP-Address> ansible_ssh_user='ec2-user' 
+
+<Web2-UAT-Server-Private-IP-Address> ansible_ssh_user='ec2-user' 
+```
+- Go to the global ansible config file in `/etc/ansible/ansible.cfg` and insert the following line below. Doing this allows ansible to know where to find configured roles. If the config file does not exist, create the directory and the cfg file.
+
+```
+[defaults]
+roles_path = /opt/ansible/ansible-config-artifact/roles
+```
+
+- Go to the `tasks` directory and edit the `main.yml` file to add tasks to be done referencing the `webserver` role. The tasks include: installing and configuring apache (httpd), cloning the tooling website from github, ensuring the website code is deployed to `/var/www/html` on both UAT webservers and ensuring httpd is started. See config below.
+
+```
+---
+- name: install apache
+  become: true
+  ansible.builtin.yum:
+    name: "httpd"
+    state: present
+
+- name: install git
+  become: true
+  ansible.builtin.yum:
+    name: "git"
+    state: present
+
+- name: clone a repo
+  become: true
+  ansible.builtin.git:
+    repo: https://github.com/<your-name>/tooling.git
+    dest: /var/www/html
+    force: yes
+
+- name: copy html content to one level up
+  become: true
+  command: cp -r /var/www/html/html/ /var/www/
+
+- name: Start service httpd, if not started
+  become: true
+  ansible.builtin.service:
+    name: httpd
+    state: started
+
+- name: recursively remove /var/www/html/html/ directory
+  become: true
+  ansible.builtin.file:
+    path: /var/www/html/html
+    state: absent
+```
+
+**Step 4 - Reference "Webserver" Role**
+---
+
+- Within the `static-assignments` folder, create a new file called `uat-webservers.yml`, where the webserver role will be referenced. See config below.
+
+```
+---
+- hosts: uat-webservers
+  roles:
+     - webserver
+```
+
+- Remember that the "parent" config file is `site.yml` so the `uat-webservers.yml` file must be referenced in it. Go to the `site.yml` and setup as below.
+
+```
+---
+- hosts: all
+- import_playbook: ../static-assignments/common.yml
+
+- hosts: uat-webservers
+- import_playbook: ../static-assignments/uat-webservers.yml
+```
+
+*Note that `common-del.yml` has been changed back to `common.yml` since wireshark had been deleted earlier and would need to be installed again.
+
+**Step 5 - Commit & Test**
+---
+
+- Save, commit and push the changes to the `refactor` branch. Create a pull request to merge to the `master` branch. Confirm that both Jenkins jobs ran and the files were all copied into the `opt/ansible/ansible-config-artifact/` directory.
+
+- Run the playbook against the `uat` inventory with the `site.yml` playbook.
+
+```
+cd /opt/ansible/ansible-config-artifact/
+
+ansible-playbook -i inventory/uat.yml playbooks/site.yml
+```
+
+![Ansible Play](play.png)
+
+- Confirm that UAT webservers can be reached from the browser. Go to `http://<Web1-UAT-Server-Public-IP-or-Public-DNS-Name>/index.php`. See result below.
+
+![Browser Check](success.png)
+
+**Project 12 Deployed Successfully!**
