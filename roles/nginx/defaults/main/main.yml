@@ -96,6 +96,7 @@ load_balancer_is_required: false
 # IP mapping for load balancers
 web1: 172.31.17.63
 web2: 172.31.21.121
+web3: 172.31.21.3
 
 # Specify whether or not you want this role to install the EPEL package when installing certain NGINX Plus modules.
 # Using 'true' will install EPEL.
