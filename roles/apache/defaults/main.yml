@@ -63,3 +63,7 @@ apache_packages_state: present
 # Apache load balancing
 enable_apache_lb: false
 load_balancer_is_required: false
+
+# DNS mapping for webservers
+web1: 172.31.17.63
+web2: 172.31.21.121

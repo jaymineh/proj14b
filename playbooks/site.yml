@@ -7,7 +7,12 @@
   tags:
     - always
 
--  hosts: webservers
+- hosts: all
+- name: Delete wireshark
+  import_playbook: ../static-assignments/common-del.yml
+
+
+- hosts: webserver
 - name: Webserver assignment
   import_playbook: ../static-assignments/uat-webservers.yml
 
