@@ -89,6 +89,10 @@ nginx_setup_license: true
 # Default is true.
 nginx_remove_license: true
 
+# NGINX load balancing
+enable_nginx_lb: false
+load_balancer_is_required: false
+
 # Specify whether or not you want this role to install the EPEL package when installing certain NGINX Plus modules.
 # Using 'true' will install EPEL.
 # Using 'false' will not install EPEL.

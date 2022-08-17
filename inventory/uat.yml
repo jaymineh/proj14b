@@ -8,6 +8,7 @@
 
 [lb]
 172.31.23.249 ansible_ssh_user='ubuntu'
+172.31.95.167 ansible_ssh_user='ubuntu'
 
 [nfs]
 172.31.81.168 ansible_ssh_user='ec2-user'
