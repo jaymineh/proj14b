@@ -25,7 +25,7 @@
 
     stage('Execute Ansible'){
       steps{
-                ansiblePlaybook become: true, credentialsId: '4bb1197c-ad84-4064-b5be-bf2c8f9002f4', disableHostKeyChecking: true, installation: 'ansible-jmn', inventory: '${inventory}', playbook: 'playbooks/site.yml'
+                ansiblePlaybook become: true, credentialsId: '5e8d6d8a-3918-480c-a742-890d62ac9a6d', disableHostKeyChecking: true, installation: 'ansible-jmn', inventory: '${inventory}', playbook: 'playbooks/site.yml'
             }
     }
 
