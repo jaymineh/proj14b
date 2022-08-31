@@ -1,6 +1,13 @@
    pipeline {
     agent any
 
+    parameters {
+      string(name: 'inventory', defaultValue: 'uat',  description: 'This is the inventory file for the environment to deploy configuration')
+    }
+   
+   pipeline {
+    agent any
+
    stages {
     stage('Build') {
       steps {
@@ -8,6 +15,18 @@
           sh 'echo "Building Stage"'
         }
       }
+    }
+
+    stage('SCM Checkout'){
+      steps{
+                git 'https://github.com/jaymineh/proj14.git'
+            }
+    }
+
+    stage('Execute Ansible'){
+      steps{
+                ansiblePlaybook become: true, credentialsId: '4bb1197c-ad84-4064-b5be-bf2c8f9002f4', disableHostKeyChecking: true, installation: 'ansible-jmn', inventory: '${inventory}', playbook: 'playbooks/site.yml'
+            }
     }
 
     stage('Test') {
@@ -43,3 +62,4 @@
     }
     }
 }
+   }
