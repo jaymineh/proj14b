@@ -4,7 +4,7 @@
     parameters {
       string(name: 'inventory', defaultValue: 'uat',  description: 'This is the inventory file for the environment to deploy configuration')
     }
-    
+
    stages {
     stage('Build') {
       steps {
@@ -22,7 +22,7 @@
 
     stage('Execute Ansible'){
       steps{
-                ansiblePlaybook become: true, credentialsId: '5e8d6d8a-3918-480c-a742-890d62ac9a6d', disableHostKeyChecking: true, installation: 'ansible-jmn', inventory: '${inventory}', playbook: 'playbooks/site.yml'
+                ansiblePlaybook become: true, credentialsId: '5e8d6d8a-3918-480c-a742-890d62ac9a6d', disableHostKeyChecking: true, installation: 'ansible-jmn', inventory: 'inventory/${inventory}', playbook: 'playbooks/site.yml'
             }
     }
 
