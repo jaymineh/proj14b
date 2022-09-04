@@ -22,7 +22,7 @@
 
     stage('Execute Ansible'){
       steps{
-                ansiblePlaybook become: true, credentialsId: '4bb1197c-ad84-4064-b5be-bf2c8f9002f4', installation: 'ansible', inventory: 'inventory/dev', playbook: 'playbooks/site.yml'
+                ansiblePlaybook become: true, credentialsId: '4bb1197c-ad84-4064-b5be-bf2c8f9002f4', installation: 'ansible', inventory: 'inventory/${inventory}', playbook: 'playbooks/site.yml'
             }
     }
 
