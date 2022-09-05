@@ -1,0 +1,61 @@
+   pipeline {
+    agent any
+
+    parameters {
+      string(name: 'inventory', defaultValue: 'uat',  description: 'This is the inventory file for the environment to deploy configuration')
+    }
+
+   stages {
+    stage('Build') {
+      steps {
+        script {
+          sh 'echo "Building Stage"'
+        }
+      }
+    }
+
+    stage('SCM Checkout'){
+      steps{
+                git 'https://github.com/jaymineh/proj14.git'
+            }
+    }
+
+    stage('Execute Ansible'){
+      steps{
+                ansiblePlaybook become: true, credentialsId: '4bb1197c-ad84-4064-b5be-bf2c8f9002f4', installation: 'ansible', inventory: 'inventory/${inventory}', playbook: 'playbooks/site.yml'
+            }
+    }
+
+    stage('Test') {
+      steps {
+        script {
+          sh 'echo "Testing Stage"'
+        }
+      }
+    }
+
+    stage('Package') {
+      steps {
+        script {
+          sh 'echo "Package Stage"'
+        }
+      }
+    }
+
+    stage('Deploy') {
+      steps {
+        script {
+          sh 'echo "Deploy Stage"'
+        }
+      }
+    }
+
+    stage('Clean Up') {
+      steps {
+        script {
+          sh 'echo "Clean Up Stage"'
+        }
+      }
+    }
+    }
+}
