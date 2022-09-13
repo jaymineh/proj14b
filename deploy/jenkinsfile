@@ -19,11 +19,11 @@ pipeline {
 
     stage('Prepare Dependencies') {
       steps {
-             su sh 'mv .env.sample .env'
-             su sh 'composer install'
-             su sh 'php artisan migrate'
-             su sh 'php artisan db:seed'
-             su sh 'php artisan key:generate'
+             sh su 'mv .env.sample .env'
+             sh su 'composer install'
+             sh su 'php artisan migrate'
+             sh su 'php artisan db:seed'
+             sh su 'php artisan key:generate'
       }
     }
   }
